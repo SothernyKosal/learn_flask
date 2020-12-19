@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    hello all users<br>
+    {% for user in all_users  %}
+        {{user}}
+        <br>
+    {% endfor %}
+
+{% endblock content %}
