@@ -1,5 +1,6 @@
-from flaskblog import db, login_manager
-from datetime import datetime
+from flaskblog import db, login_manager, app
+import jwt
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 
 @login_manager.user_loader
@@ -15,8 +16,31 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     posts = db.relationship('Post', backref='author', lazy=True)
 
+    
+    def get_reset_token(self):
+        token = jwt.encode({
+            'public_id': self.public_id,
+            'exp': datetime.utcnow() + timedelta(minutes=30)
+        }, app.config['SECRET_KEY'])
+
+        return token.decode('UTF-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            user = User.query\
+                .filter_by(public_id=data['public_id'])\
+                .first()
+        except :            
+            return None        
+        return user
+
+
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
+    
+
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,4 +50,4 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return f"Post('{self.title}', '{self.date_posted}')"
+        return f"Post('{self.title}', '{self.date_posted}')" 
