@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block content %}
+{% if current_user.role_id == 1 %}
+    <legend>All Users</legend>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in all_users %}        
+            <tr onClick="window.location.href='{{ url_for('account',id=user.id) }}';" style="cursor:pointer;">
+                <th scope="row">{{ user.id }}</th>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role.name }}</td>
+                </a>
+            </tr>            
+            {% endfor %}            
+        </tbody>
+    </table>
+{# {% else %}
+    <h1 class="text-danger">error 403: access denied</h1> #}
+{% endif %}
+{% endblock content %}

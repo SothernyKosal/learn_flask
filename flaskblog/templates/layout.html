@@ -2,6 +2,9 @@
 <html lang="en">
 
 <head>
+    <!-- Select2  -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
 
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -33,11 +36,16 @@
                     <!-- Navbar Right Side -->
                     <div class="navbar-nav">
                         {% if current_user.is_authenticated %}
-                        <a class="nav-item nav-link" href="{{url_for('new_post')}}">New Post</a>
-                        <a class="nav-item nav-link" href="{{url_for('account')}}">Account</a>
-                        <a class="nav-item nav-link" href="{{url_for('logout')}}">Logout</a> {% else %}
+                            {% if current_user.role_id == 1 %}
+                                <a class="nav-item nav-link" href="{{url_for('admin')}}">Admin</a>
+                            {% endif %}
+                            <a class="nav-item nav-link" href="{{url_for('new_post')}}">New Post</a>
+                            <a class="nav-item nav-link" href="{{url_for('account',id = current_user.id)}}">Account</a>
+                            <a class="nav-item nav-link" href="{{url_for('logout')}}">Logout</a> 
+                        {% else %}
                         <a class="nav-item nav-link" href="{{url_for('login')}}">Login</a>
-                        <a class="nav-item nav-link" href="{{url_for('register')}}">Register</a> {% endif %}
+                        <a class="nav-item nav-link" href="{{url_for('register')}}">Register</a> 
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -46,11 +54,16 @@
     <main role="main" class="container">
         <div class="row">
             <div class="col-md-8">
-                {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category,message in messages %}
-                <div class="alert alert-{{ category }}">
-                    {{ message }}
-                </div>
-                {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+                {% with messages = get_flashed_messages(with_categories=true) %} 
+                    {% if messages %} 
+                        {% for category,message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %} 
+                {% block content %}{% endblock %}
             </div>
             <div class="col-md-4">
                 <div class="content-section">

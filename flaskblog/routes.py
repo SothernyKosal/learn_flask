@@ -4,8 +4,8 @@ from PIL import Image
 from flask import render_template, url_for, redirect, flash, request, jsonify, make_response, session, abort
 from flaskblog import app, db, bcrypt, mail
 from flaskblog.forms import (RegistrationForm, LoginForm, UpdateAccountForm, 
-                            PostForm, RequestResetForm, ResetPasswordForm)
-from flaskblog.models import User, Post
+                            PostForm, RequestResetForm, ResetPasswordForm, CreateProjectForm)
+from flaskblog.models import User, Post, Role
 import uuid
 from flask_login import login_user, current_user, logout_user, login_required
 from functools import wraps
@@ -139,27 +139,53 @@ def save_picture(form_picture):
 
     return picture_fn
 
-@app.route('/account', methods=['GET','POST'])
+@app.route('/account/<int:id>', methods=['GET','POST'])
 @login_required
-def account():
-    form = UpdateAccountForm()    
-    if form.validate_on_submit():  
-        if form.picture.data:
-            picture_file = save_picture(form.picture.data)
-            current_user.image_file = picture_file                        
+def account(id):
+    total_user = User.query.all()
 
-        current_user.username = form.username.data
-        current_user.email = form.email.data
-        db.session.commit()
-        flash('Your account have been updated!', 'success')
-        return redirect(url_for('account'))
-    elif request.method == 'GET':
-        form.username.data = current_user.username
-        form.email.data = current_user.email
+    if id>len(total_user):
+        if current_user.role_id == 1:                    
+            return render_template('404.html', title="404 Not Found")
+        else:
+            return render_template('403.html', title="403 Access Denied")
+
+    user = User.query.filter_by(id=id).first()
+
+    #the value passed in () is default value to display in selectfield
+    form = UpdateAccountForm(role=user.role_id)
+    #take the role from database and add to the selectfield in form
+    form.role.choices = [(role.id, role.name) for role in Role.query.all()]
     
-    image_file = url_for('static', filename = 'profile_pics/'+ current_user.image_file)
+    if current_user.id == id or current_user.role_id==1:
+        if request.method == 'POST':             
+            if form.validate_on_submit():                         
+                if form.picture.data:
+                    picture_file = save_picture(form.picture.data)
+                    user.image_file = picture_file                        
+
+                user.username = form.username.data
+                user.email = form.email.data
+
+                if form.role.data:
+                    user.role_id = form.role.data
+                    
+                db.session.commit()                
+                flash('Your account have been updated!', 'success')
+
+                return redirect(url_for('account',id=user.id))
+
+        elif request.method == 'GET':
+            form.username.data = user.username
+            form.email.data = user.email
+ 
+    else:
+        return render_template('403.html', title="403 Access Denied")
+        
+    image_file = url_for('static', filename = 'profile_pics/'+ user.image_file)
+
     return render_template('account.html', title='Account', 
-                            image_file = image_file, form = form)
+                            image_file = image_file, form = form, user=user)
 
 
 #Post
@@ -222,6 +248,8 @@ def user_posts(username):
             .paginate(page=page, per_page=5)
     return render_template('user_posts.html', posts=posts, user=user)
 
+
+#reset password
 def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request', 
@@ -267,4 +295,23 @@ def reset_token(token):
 
     return render_template('reset_token.html', title="Reset Password", form=form)
 
+#admin
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    all_users = User.query.all()
+
+    if current_user.role_id != 1:
+        return render_template('403.html', title="403 Access Denied")
     
+    return render_template('admin.html', title="Admin Page", all_users=all_users)
+
+
+# form not yet work and function not yet implement(need to validate form on submit and save data to db)
+@app.route('/create_project', methods=['GET','POST'])    
+def create_project():
+    # if current_user.is_authenticated:
+    #     return redirect(url_for('home'))
+    #instance of the form
+    form = CreateProjectForm()
+
+    return render_template('create_project.html', title="Create Project", form=form)
